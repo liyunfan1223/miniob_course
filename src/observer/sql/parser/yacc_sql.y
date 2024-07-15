@@ -103,6 +103,7 @@ UnboundAggregateExpr *create_aggregate_expression(const char *aggregate_name,
         DATA
         INFILE
         EXPLAIN
+        SUM
         STORAGE
         FORMAT
         EQ
@@ -531,6 +532,9 @@ expression:
       $$ = new StarExpr();
     }
     // your code here
+    | SUM LBRACE expression RBRACE {
+      $$ = create_aggregate_expression("sum", $3, sql_string, &@$);
+    }
     ;
 
 rel_attr:
@@ -658,9 +662,10 @@ comp_op:
 
 // your code here
 group_by:
-    /* empty */
+    GROUP BY expression
     {
-      $$ = nullptr;
+      $$ = new std::vector<std::unique_ptr<Expression>>;
+      $$->emplace_back(std::unique_ptr<Expression>($3));
     }
     ;
 load_data_stmt:

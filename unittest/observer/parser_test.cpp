@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details. */
 
 using namespace std;
 
-TEST(ParserTest, DISABLED_aggregation_test)
+TEST(ParserTest, aggregation_test)
 {
   ParsedSqlResult result;
   {

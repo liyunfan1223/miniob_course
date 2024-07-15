@@ -20,24 +20,48 @@ int mm256_extract_epi32_var_indx(const __m256i vec, const unsigned int i)
   return _mm_cvtsi128_si32(_mm256_castsi256_si128(val));
 }
 
-int mm256_sum_epi32(const int *values, int size)
-{
-  // your code here
-  int sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += values[i];
-  }
-  return sum;
+int mm256_sum_epi32(const int *values, int size) {
+    __m256i sum_vec = _mm256_setzero_si256(); // 初始化为0的向量
+
+    int i;
+    for (i = 0; i <= size - 8; i += 8) {
+        __m256i vec = _mm256_loadu_si256((__m256i*)&values[i]);
+        sum_vec = _mm256_add_epi32(sum_vec, vec);
+    }
+
+    // 将向量中的元素水平加起来
+    int temp[8];
+    _mm256_storeu_si256((__m256i*)temp, sum_vec);
+    int sum = temp[0] + temp[1] + temp[2] + temp[3] + temp[4] + temp[5] + temp[6] + temp[7];
+
+    // 处理剩余的元素
+    for (; i < size; i++) {
+        sum += values[i];
+    }
+
+    return sum;
 }
 
-float mm256_sum_ps(const float *values, int size)
-{
-  // your code here
-  float sum = 0;
-  for (int i = 0; i < size; i++) {
-    sum += values[i];
-  }
-  return sum;
+float mm256_sum_ps(const float *values, int size) {
+    __m256 sum_vec = _mm256_setzero_ps(); // 初始化为0的向量
+
+    int i;
+    for (i = 0; i <= size - 8; i += 8) {
+        __m256 vec = _mm256_loadu_ps(&values[i]);
+        sum_vec = _mm256_add_ps(sum_vec, vec);
+    }
+
+    // 将向量中的元素水平加起来
+    float temp[8];
+    _mm256_storeu_ps(temp, sum_vec);
+    float sum = temp[0] + temp[1] + temp[2] + temp[3] + temp[4] + temp[5] + temp[6] + temp[7];
+
+    // 处理剩余的元素
+    for (; i < size; i++) {
+        sum += values[i];
+    }
+
+    return sum;
 }
 
 template <typename V>
