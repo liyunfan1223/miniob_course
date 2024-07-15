@@ -31,7 +31,7 @@ TEST(ParserTest, aggregation_test)
   }
 }
 
-TEST(ParserTest, DISABLED_group_by_test)
+TEST(ParserTest, group_by_test)
 {
   ParsedSqlResult result;
   {

@@ -662,7 +662,11 @@ comp_op:
 
 // your code here
 group_by:
-    GROUP BY expression
+    /* empty */
+    {
+      $$ = nullptr;
+    }
+    | GROUP BY expression
     {
       $$ = new std::vector<std::unique_ptr<Expression>>;
       $$->emplace_back(std::unique_ptr<Expression>($3));
