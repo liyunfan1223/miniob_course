@@ -9,6 +9,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/aggregate_hash_table.h"
+#include "sql/expr/arithmetic_operator.hpp"
 
 // ----------------------------------StandardAggregateHashTable------------------
 
@@ -213,7 +214,8 @@ void LinearProbingAggregateHashTable<V>::add_batch(int *input_keys, V *input_val
 {
   // your code here
   exit(-1);
-
+  // const int SIMD_WIDTH = 8;
+  // SIMD_WIDTH;
   // inv (invalid) 表示是否有效，inv[i] = -1 表示有效，inv[i] = 0 表示无效。
   // key[SIMD_WIDTH],value[SIMD_WIDTH] 表示当前循环中处理的键值对。
   // off (offset) 表示线性探测冲突时的偏移量，key[i] 每次遇到冲突键，则off[i]++，如果key[i] 已经完成聚合，则off[i] = 0，
