@@ -496,7 +496,7 @@ RC PaxRecordPageHandler::get_record(const RID &rid, Record &record)
 
   record.set_rid(rid);
 
-  char data[page_header_->record_size + 5];
+  char *data = new char[page_header_->record_size];
   int offset = 0;
   for (int col_num = 0; col_num < page_header_->column_num; col_num++) {
     char *colToPos = get_field_data(rid.slot_num, col_num);
@@ -526,19 +526,15 @@ RC PaxRecordPageHandler::get_chunk(Chunk &chunk)
 
   // exit(0);
   for(auto i = 0; i < chunk.column_num(); i++) {
-
     Column* temp_col = chunk.column_ptr(i);
 
-    for(auto j = 0;j<temp_idxs.size();j++ ) {
+    for(size_t j = 0; j < temp_idxs.size();j++ ) {
 
       char* data = get_field_data(temp_idxs[j], chunk.column_ids(i));
     // temp_col
     // temp_col->init(temp_col->attr_type(), temp_col->attr_len(), (int )page_header_->record_num);
       temp_col->append_one(data);
     }
-
-    
-
 
   }
   if (chunk.rows() == 0) {
