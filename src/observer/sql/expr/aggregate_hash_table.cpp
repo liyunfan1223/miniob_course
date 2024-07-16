@@ -11,6 +11,7 @@ See the Mulan PSL v2 for more details. */
 #include "sql/expr/aggregate_hash_table.h"
 #include "common/math/simd_util.h"
 #include "sql/expr/arithmetic_operator.hpp"
+#include "sql/expr/expression.h"
 #include <algorithm>
 
 // ----------------------------------StandardAggregateHashTable------------------
@@ -18,7 +19,43 @@ See the Mulan PSL v2 for more details. */
 RC StandardAggregateHashTable::add_chunk(Chunk &groups_chunk, Chunk &aggrs_chunk)
 {
   // your code here
-  exit(-1);
+  for (int i = 0; i < groups_chunk.column(0).count(); i++) {
+    std::vector<Value> keys;
+    for (int j = 0; j < groups_chunk.column_num(); j++) {
+      keys.push_back(groups_chunk.column(j).get_value(i));
+    }
+    std::vector<Value> &values = aggr_values_[keys];
+    for (int j = 0; j < aggrs_chunk.column_num(); j++) {
+      assert(aggr_types_[j] == AggregateExpr::Type::SUM);
+      AttrType type = aggrs_chunk.column(j).attr_type();
+      assert(type == AttrType::INTS || type == AttrType::FLOATS);
+//      char* data = aggrs_chunk.column(j).data();
+//      int data_len = aggrs_chunk.column(j).data_len();
+      Value v = aggrs_chunk.column(j).get_value(i); // Value(type, data, data_len));
+      if ((int)values.size() <= aggrs_chunk.column_num()) {
+        values.push_back(v);
+      } else {
+        Value &old_v = values[j];
+        switch (old_v.attr_type()) {
+          case AttrType::INTS: {
+            int sum = old_v.get_int();
+            sum += v.get_int();
+            old_v.set_int(sum);
+            break;
+          }
+          case AttrType::FLOATS: {
+            float sum = old_v.get_float();
+            sum += v.get_float();
+            old_v.set_float(sum);
+            break;
+          }
+          default:
+            break;
+        }
+      }
+    }
+  }
+  return RC::SUCCESS;
 }
 
 void StandardAggregateHashTable::Scanner::open_scan()
