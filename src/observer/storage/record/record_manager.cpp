@@ -493,17 +493,19 @@ RC PaxRecordPageHandler::get_record(const RID &rid, Record &record)
     LOG_ERROR("Invalid slot_num:%d, slot is empty, page_num %d.", rid.slot_num, frame_->page_num());
     return RC::RECORD_NOT_EXIST;
   }
-
   record.set_rid(rid);
 
-  char *data = (char *)malloc(page_header_->record_size + 10);
+  char *data = (char *)malloc(page_header_->record_size);
   int offset = 0;
   for (int col_num = 0; col_num < page_header_->column_num; col_num++) {
     char *colToPos = get_field_data(rid.slot_num, col_num);
     memcpy(&data[offset], colToPos, get_field_len(col_num));
     offset += get_field_len(col_num);
   }
-  record.set_data(data, page_header_->record_size);
+
+  record.copy_data(data, page_header_->record_size);
+  delete data;
+  // record.set_data(data, page_header_->record_size);
 
   return RC::SUCCESS;
 }
