@@ -496,7 +496,7 @@ RC PaxRecordPageHandler::get_record(const RID &rid, Record &record)
 
   record.set_rid(rid);
 
-  char *data = (char *)malloc(page_header_->record_size);
+  char data[page_header_->record_size + 5];
   int offset = 0;
   for (int col_num = 0; col_num < page_header_->column_num; col_num++) {
     char *colToPos = get_field_data(rid.slot_num, col_num);
