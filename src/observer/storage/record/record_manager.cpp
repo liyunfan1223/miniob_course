@@ -504,7 +504,7 @@ RC PaxRecordPageHandler::get_record(const RID &rid, Record &record)
   }
 
   record.copy_data(data, page_header_->record_size);
-  delete data;
+  free(data);
   // record.set_data(data, page_header_->record_size);
 
   return RC::SUCCESS;
