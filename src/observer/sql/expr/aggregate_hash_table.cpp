@@ -32,7 +32,7 @@ RC StandardAggregateHashTable::add_chunk(Chunk &groups_chunk, Chunk &aggrs_chunk
 //      char* data = aggrs_chunk.column(j).data();
 //      int data_len = aggrs_chunk.column(j).data_len();
       Value v = aggrs_chunk.column(j).get_value(i); // Value(type, data, data_len));
-      if ((int)values.size() <= aggrs_chunk.column_num()) {
+      if ((int)values.size() < aggrs_chunk.column_num()) {
         values.push_back(v);
       } else {
         Value &old_v = values[j];
