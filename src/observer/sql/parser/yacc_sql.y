@@ -666,10 +666,9 @@ group_by:
     {
       $$ = nullptr;
     }
-    | GROUP BY expression
+    | GROUP BY expression_list
     {
-      $$ = new std::vector<std::unique_ptr<Expression>>;
-      $$->emplace_back(std::unique_ptr<Expression>($3));
+      $$ = $3;
     }
     ;
 load_data_stmt:

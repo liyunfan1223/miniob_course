@@ -64,11 +64,18 @@ public:
     return RC::SUCCESS;
 }
   RC next(Chunk &chunk) override {
+    int col_id = 0;
+    for (size_t i = 0; i < group_by_exprs_.size(); i++) {
+      Expression* expr = group_by_exprs_[i].get();
+      Column col;
+      expr->get_column(chunk_, col);
+      chunk.add_column(make_unique<Column>(col.attr_type(), col.attr_len()), col_id++);
+    }
     for (size_t i = 0; i < aggr_exprs_.size(); i++) {
       AggregateExpr* aggr_expr = static_cast<AggregateExpr*>(aggr_exprs_[i]);
       Column col;
       aggr_expr->child()->get_column(chunk_, col);
-      chunk.add_column(make_unique<Column>(col.attr_type(), col.attr_len()), i);
+      chunk.add_column(make_unique<Column>(col.attr_type(), col.attr_len()), col_id++);
     }
     RC rc = scan_->next(chunk);
     return rc;
