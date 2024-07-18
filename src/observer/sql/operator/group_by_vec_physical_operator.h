@@ -12,6 +12,7 @@ See the Mulan PSL v2 for more details. */
 
 #include "sql/expr/aggregate_hash_table.h"
 #include "sql/operator/physical_operator.h"
+#include <memory>
 
 /**
  * @brief Group By 物理算子(vectorized)
@@ -21,15 +22,67 @@ class GroupByVecPhysicalOperator : public PhysicalOperator
 {
 public:
   GroupByVecPhysicalOperator(
-      std::vector<std::unique_ptr<Expression>> &&group_by_exprs, std::vector<Expression *> &&expressions){};
+      std::vector<std::unique_ptr<Expression>> &&group_by_exprs, std::vector<Expression *> &&expressions) :
+    group_by_exprs_(std::move(group_by_exprs)), aggr_exprs_(expressions) {
+        hash_table_ = std::make_unique<StandardAggregateHashTable>(expressions);
+        scan_ = std::make_unique<StandardAggregateHashTable::Scanner>(hash_table_.get());
+    }
 
   virtual ~GroupByVecPhysicalOperator() = default;
 
   PhysicalOperatorType type() const override { return PhysicalOperatorType::GROUP_BY_VEC; }
 
-  RC open(Trx *trx) override { return RC::UNIMPLENMENT; }
-  RC next(Chunk &chunk) override { return RC::UNIMPLENMENT; }
-  RC close() override { return RC::UNIMPLENMENT; }
+  RC open(Trx *trx) override {
+    ASSERT(children_.size() == 1, "group by operator only support one child, but got %d", children_.size());
+
+    PhysicalOperator &child = *children_[0];
+    RC                rc    = child.open(trx);
+    if (OB_FAIL(rc)) {
+      LOG_INFO("failed to open child operator. rc=%s", strrc(rc));
+      return rc;
+    }
+
+    while (OB_SUCC(rc = child.next(chunk_))) {
+      Chunk                   group_chunk;
+      Chunk                   aggr_chunk;
+      for (size_t i = 0; i < group_by_exprs_.size(); i++) {
+        Expression* group_expr = group_by_exprs_[i].get();
+        unique_ptr<Column> col = make_unique<Column>();
+        group_expr->get_column(chunk_, *col);
+        group_chunk.add_column(std::move(col), i);
+      }
+
+      for (size_t i = 0; i < aggr_exprs_.size(); i++) {
+        AggregateExpr* aggr_expr = static_cast<AggregateExpr*>(aggr_exprs_[i]);
+        unique_ptr<Column> col = make_unique<Column>();
+        aggr_expr->child()->get_column(chunk_, *col);
+        aggr_chunk.add_column(std::move(col), i);
+      }
+      hash_table_->add_chunk(group_chunk, aggr_chunk);
+    }
+    scan_->open_scan();
+    return RC::SUCCESS;
+}
+  RC next(Chunk &chunk) override {
+    for (size_t i = 0; i < aggr_exprs_.size(); i++) {
+      AggregateExpr* aggr_expr = static_cast<AggregateExpr*>(aggr_exprs_[i]);
+      Column col;
+      aggr_expr->child()->get_column(chunk_, col);
+      chunk.add_column(make_unique<Column>(col.attr_type(), col.attr_len()), i);
+    }
+    RC rc = scan_->next(chunk);
+    return rc;
+  }
+  RC close() override {
+    RC rc = children_[0]->close();
+    LOG_INFO("close group by operator");
+    return rc;
+  }
 
 private:
+    Chunk chunk_;
+    std::vector<std::unique_ptr<Expression>> group_by_exprs_;
+    std::vector<Expression*> aggr_exprs_;
+    std::unique_ptr<StandardAggregateHashTable> hash_table_;
+    std::unique_ptr<StandardAggregateHashTable::Scanner> scan_;
 };
